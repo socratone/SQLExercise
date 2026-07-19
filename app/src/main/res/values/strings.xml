@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">SQL Exercise</string>
+    <string name="back">Back</string>
+    <string name="content_not_ready">Content coming soon</string>
+    <string name="empty_levels">No levels available</string>
+    <string name="load_failed">Couldn\'t load the content</string>
 </resources>
