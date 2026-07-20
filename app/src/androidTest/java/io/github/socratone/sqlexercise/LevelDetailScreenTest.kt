@@ -7,7 +7,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import io.github.socratone.sqlexercise.ui.LevelDetailRoute
 import io.github.socratone.sqlexercise.ui.LevelDetailScreen
 import io.github.socratone.sqlexercise.ui.LevelDetailUiState
@@ -36,7 +39,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "",
+                    sqlInput = TextFieldValue(),
                     submissionResult = SubmissionResult.NotSubmitted,
                     onInputChange = {},
                     onReset = {},
@@ -56,7 +59,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "SELECT * FROM employees",
+                    sqlInput = TextFieldValue("SELECT * FROM employees"),
                     submissionResult = SubmissionResult.Correct,
                     onInputChange = {},
                     onReset = { resetCalled = true },
@@ -75,7 +78,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "SELECT FROM employees",
+                    sqlInput = TextFieldValue("SELECT FROM employees"),
                     submissionResult = SubmissionResult.QueryError("SQL 실행 오류: 문법을 확인해 주세요."),
                     onInputChange = {},
                     onReset = {},
@@ -94,7 +97,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "",
+                    sqlInput = TextFieldValue(),
                     submissionResult = SubmissionResult.NotSubmitted,
                     onInputChange = {},
                     onReset = {},
@@ -115,7 +118,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "",
+                    sqlInput = TextFieldValue(),
                     submissionResult = SubmissionResult.NotSubmitted,
                     onInputChange = {},
                     onReset = {},
@@ -127,6 +130,55 @@ class LevelDetailScreenTest {
 
         composeRule.onNodeWithText("HR 데이터베이스 스키마").assertIsDisplayed()
         composeRule.onNodeWithText("스키마 접기").assertIsDisplayed()
+    }
+
+    @Test
+    fun quickInputShowsGroupsAndInsertsSelectedToken() {
+        var updatedInput: TextFieldValue? = null
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = TextFieldValue(),
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = { updatedInput = it },
+                    onReset = {},
+                    onSubmit = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("키워드").assertIsDisplayed()
+        composeRule.onNodeWithText("테이블").assertIsDisplayed()
+        composeRule.onNodeWithText("SELECT").performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(updatedInput?.text == "SELECT ")
+            assertTrue(updatedInput?.selection?.start == 7)
+        }
+    }
+
+    @Test
+    fun tableChipInsertsTableName() {
+        var updatedInput: TextFieldValue? = null
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = TextFieldValue("SELECT ", TextRange(7)),
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = { updatedInput = it },
+                    onReset = {},
+                    onSubmit = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("employees").performScrollTo().performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(updatedInput?.text == "SELECT employees ")
+        }
     }
 
     @Test
@@ -158,7 +210,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "",
+                    sqlInput = TextFieldValue(),
                     submissionResult = SubmissionResult.NotSubmitted,
                     onInputChange = {},
                     onReset = {},
@@ -188,7 +240,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "",
+                    sqlInput = TextFieldValue(),
                     submissionResult = SubmissionResult.NotSubmitted,
                     onInputChange = {},
                     onReset = {},

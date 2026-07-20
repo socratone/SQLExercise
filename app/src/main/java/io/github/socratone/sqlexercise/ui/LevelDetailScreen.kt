@@ -1,6 +1,7 @@
 package io.github.socratone.sqlexercise.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,15 +27,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.socratone.sqlexercise.R
@@ -57,6 +64,58 @@ private val SubmissionResultSaver = Saver<SubmissionResult, String>(
         }
     },
 )
+
+internal val sqlKeywordTokens = listOf(
+    "SELECT",
+    "DISTINCT",
+    "FROM",
+    "WHERE",
+    "JOIN",
+    "LEFT JOIN",
+    "GROUP BY",
+    "HAVING",
+    "ORDER BY",
+    "ASC",
+    "DESC",
+    "LIMIT",
+)
+
+internal val sqlTableTokens = listOf(
+    "regions",
+    "countries",
+    "locations",
+    "departments",
+    "jobs",
+    "employees",
+    "job_history",
+)
+
+/** 선택 영역을 SQL 토큰으로 바꾸고 주변 문맥에 필요한 공백만 추가합니다. */
+internal fun insertSqlToken(value: TextFieldValue, token: String): TextFieldValue {
+    val selectionStart = value.selection.min
+    val selectionEnd = value.selection.max
+    val before = value.text.substring(0, selectionStart)
+    val after = value.text.substring(selectionEnd)
+    val needsLeadingSpace = before.lastOrNull()?.let { previous ->
+        !previous.isWhitespace() && previous !in "(."
+    } ?: false
+    val needsTrailingSpace = after.firstOrNull()?.let { next ->
+        !next.isWhitespace() && next !in "),;."
+    } ?: true
+    val insertedText = buildString {
+        if (needsLeadingSpace) append(' ')
+        append(token)
+        if (needsTrailingSpace) append(' ')
+    }
+    val updatedText = before + insertedText + after
+    val cursorPosition = before.length + insertedText.length
+
+    return value.copy(
+        text = updatedText,
+        selection = TextRange(cursorPosition),
+        composition = null,
+    )
+}
 
 /** 상세 화면의 공통 상단 바와 로딩, 성공, 실패 상태를 분기합니다. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,7 +179,9 @@ private fun LevelDetailContent(
     modifier: Modifier = Modifier,
 ) {
     // 화면 회전이나 프로세스 복원 시에도 현재 문제의 입력 내용을 유지합니다.
-    var sqlInput by rememberSaveable(exercise.id) { mutableStateOf("") }
+    var sqlInput by rememberSaveable(exercise.id, stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue())
+    }
     var submissionResult by rememberSaveable(exercise.id, stateSaver = SubmissionResultSaver) {
         mutableStateOf(SubmissionResult.NotSubmitted)
     }
@@ -131,18 +192,21 @@ private fun LevelDetailContent(
         sqlInput = sqlInput,
         submissionResult = submissionResult,
         onInputChange = { updatedSql ->
+            val textChanged = sqlInput.text != updatedSql.text
             sqlInput = updatedSql
 
             // 채점 후 SQL이 바뀌면 이전 결과는 더 이상 유효하지 않습니다.
-            submissionResult = SubmissionResult.NotSubmitted
+            if (textChanged) {
+                submissionResult = SubmissionResult.NotSubmitted
+            }
         },
         onReset = {
-            sqlInput = ""
+            sqlInput = TextFieldValue()
             submissionResult = SubmissionResult.NotSubmitted
         },
         onSubmit = {
             val result = evaluateSqlAnswer(
-                input = sqlInput,
+                input = sqlInput.text,
                 expected = exercise.expectedSql,
                 orderSensitive = exercise.orderSensitive,
             )
@@ -168,9 +232,9 @@ private fun LevelDetailContent(
 @Composable
 fun LevelDetailScreen(
     exercise: LevelExercise,
-    sqlInput: String,
+    sqlInput: TextFieldValue,
     submissionResult: SubmissionResult,
-    onInputChange: (String) -> Unit,
+    onInputChange: (TextFieldValue) -> Unit,
     onReset: () -> Unit,
     onSubmit: () -> Unit,
     previousEnabled: Boolean = false,
@@ -181,6 +245,8 @@ fun LevelDetailScreen(
     schemaExpanded: Boolean = false,
     onSchemaToggle: () -> Unit = {},
 ) {
+    val sqlInputFocusRequester = remember { FocusRequester() }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -260,10 +326,18 @@ fun LevelDetailScreen(
                 }
             }
         }
+        SqlQuickInputSection(
+            onTokenClick = { token ->
+                onInputChange(insertSqlToken(sqlInput, token))
+                sqlInputFocusRequester.requestFocus()
+            },
+        )
         OutlinedTextField(
             value = sqlInput,
             onValueChange = onInputChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(sqlInputFocusRequester),
             label = { Text(stringResource(R.string.sql_input_label)) },
             minLines = 8,
             maxLines = 12,
@@ -282,12 +356,59 @@ fun LevelDetailScreen(
             Button(
                 onClick = onSubmit,
                 modifier = Modifier.weight(1f),
-                enabled = sqlInput.isNotBlank(),
+                enabled = sqlInput.text.isNotBlank(),
             ) {
                 Text(stringResource(R.string.submit))
             }
         }
         SubmissionFeedback(submissionResult)
+    }
+}
+
+@Composable
+private fun SqlQuickInputSection(
+    onTokenClick: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SqlQuickInputRow(
+            title = stringResource(R.string.sql_keywords),
+            tokens = sqlKeywordTokens,
+            onTokenClick = onTokenClick,
+        )
+        SqlQuickInputRow(
+            title = stringResource(R.string.sql_tables),
+            tokens = sqlTableTokens,
+            onTokenClick = onTokenClick,
+        )
+    }
+}
+
+@Composable
+private fun SqlQuickInputRow(
+    title: String,
+    tokens: List<String>,
+    onTokenClick: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(text = title, style = MaterialTheme.typography.labelLarge)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            tokens.forEach { token ->
+                AssistChip(
+                    onClick = { onTokenClick(token) },
+                    label = {
+                        Text(
+                            text = token,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -320,7 +441,7 @@ private fun LevelDetailPreview() {
     SQLExerciseTheme {
         LevelDetailScreen(
             exercise = sampleExercises.first(),
-            sqlInput = "SELECT * FROM employees;",
+            sqlInput = TextFieldValue("SELECT * FROM employees;"),
             submissionResult = SubmissionResult.Correct,
             onInputChange = {},
             onReset = {},
