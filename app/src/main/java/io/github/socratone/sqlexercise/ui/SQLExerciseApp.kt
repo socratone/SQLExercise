@@ -60,13 +60,32 @@ fun SQLExerciseApp() {
         ) { backStackEntry ->
             // 목록에서 전달받은 ID에 해당하는 문제를 찾아 상세 화면 상태를 만듭니다.
             val levelId = backStackEntry.arguments?.getInt("levelId")
-            val selectedExercise = exercises.firstOrNull { it.id == levelId }
+            val selectedIndex = exercises.indexOfFirst { it.id == levelId }
+            val selectedExercise = exercises.getOrNull(selectedIndex)
             val detailState = selectedExercise?.let(LevelDetailUiState::Content)
                 ?: LevelDetailUiState.Error
+            val previousExerciseId = exercises.getOrNull(selectedIndex - 1)?.id
+            val nextExerciseId = exercises.getOrNull(selectedIndex + 1)?.id
+
+            fun navigateToExercise(exerciseId: Int) {
+                navController.navigate("level-detail/$exerciseId") {
+                    // 상세 화면 이력을 쌓지 않아 상단 Back이 항상 목록으로 돌아가게 합니다.
+                    popUpTo(LEVEL_LIST_ROUTE) { inclusive = false }
+                    launchSingleTop = true
+                }
+            }
 
             LevelDetailRoute(
                 uiState = detailState,
                 onBackClick = navController::navigateUp,
+                previousEnabled = previousExerciseId != null,
+                nextEnabled = nextExerciseId != null,
+                onPreviousClick = {
+                    previousExerciseId?.let(::navigateToExercise)
+                },
+                onNextClick = {
+                    nextExerciseId?.let(::navigateToExercise)
+                },
                 onExerciseCompleted = { completedId ->
                     if (completedId !in completedExerciseIds) {
                         progressStore.markCompleted(completedId)

@@ -1,9 +1,11 @@
 package io.github.socratone.sqlexercise
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import io.github.socratone.sqlexercise.ui.LevelDetailRoute
@@ -13,6 +15,7 @@ import io.github.socratone.sqlexercise.ui.LevelExercise
 import io.github.socratone.sqlexercise.ui.SubmissionResult
 import io.github.socratone.sqlexercise.ui.theme.SQLExerciseTheme
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -144,6 +147,65 @@ class LevelDetailScreenTest {
 
         composeRule.runOnIdle {
             assertTrue(completedExerciseId == exercise.id)
+        }
+    }
+
+    @Test
+    fun previousAndNextButtonsCallTheirCallbacks() {
+        var previousCalled = false
+        var nextCalled = false
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = "",
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                    previousEnabled = true,
+                    nextEnabled = true,
+                    onPreviousClick = { previousCalled = true },
+                    onNextClick = { nextCalled = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("이전 문제").assertIsEnabled().performClick()
+        composeRule.onNodeWithContentDescription("다음 문제").assertIsEnabled().performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(previousCalled)
+            assertTrue(nextCalled)
+        }
+    }
+
+    @Test
+    fun disablesNavigationButtonsAtListBoundaries() {
+        var previousCalled = false
+        var nextCalled = false
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = "",
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                    previousEnabled = false,
+                    nextEnabled = false,
+                    onPreviousClick = { previousCalled = true },
+                    onNextClick = { nextCalled = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("이전 문제").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("다음 문제").assertIsNotEnabled()
+        composeRule.runOnIdle {
+            assertFalse(previousCalled)
+            assertFalse(nextCalled)
         }
     }
 }
