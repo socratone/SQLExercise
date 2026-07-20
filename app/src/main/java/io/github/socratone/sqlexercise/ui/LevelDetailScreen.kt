@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -103,6 +104,7 @@ private fun LevelDetailContent(
     var submissionResult by rememberSaveable(exercise.id, stateSaver = SubmissionResultSaver) {
         mutableStateOf(SubmissionResult.NotSubmitted)
     }
+    var schemaExpanded by rememberSaveable(exercise.id) { mutableStateOf(false) }
 
     LevelDetailScreen(
         exercise = exercise,
@@ -125,6 +127,8 @@ private fun LevelDetailContent(
                 orderSensitive = exercise.orderSensitive,
             )
         },
+        schemaExpanded = schemaExpanded,
+        onSchemaToggle = { schemaExpanded = !schemaExpanded },
         modifier = modifier,
     )
 }
@@ -142,6 +146,8 @@ fun LevelDetailScreen(
     onReset: () -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
+    schemaExpanded: Boolean = false,
+    onSchemaToggle: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -161,6 +167,37 @@ fun LevelDetailScreen(
             text = exercise.question,
             style = MaterialTheme.typography.bodyLarge,
         )
+        OutlinedButton(
+            onClick = onSchemaToggle,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                stringResource(
+                    if (schemaExpanded) R.string.hide_schema else R.string.show_schema,
+                ),
+            )
+        }
+        if (schemaExpanded) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.database_schema),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = hrSchemaReference,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    )
+                }
+            }
+        }
         OutlinedTextField(
             value = sqlInput,
             onValueChange = onInputChange,
@@ -221,7 +258,7 @@ private fun LevelDetailPreview() {
     SQLExerciseTheme {
         LevelDetailScreen(
             exercise = sampleExercises.first(),
-            sqlInput = "SELECT * FROM users;",
+            sqlInput = "SELECT * FROM employees;",
             submissionResult = SubmissionResult.Correct,
             onInputChange = {},
             onReset = {},

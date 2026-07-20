@@ -1,8 +1,16 @@
 package io.github.socratone.sqlexercise.ui
 
-import android.database.Cursor
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteException
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.SQLiteException
+import androidx.sqlite.SQLiteStatement
+import androidx.sqlite.SQLITE_DATA_BLOB
+import androidx.sqlite.SQLITE_DATA_FLOAT
+import androidx.sqlite.SQLITE_DATA_INTEGER
+import androidx.sqlite.SQLITE_DATA_NULL
+import androidx.sqlite.SQLITE_DATA_TEXT
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import androidx.sqlite.execSQL
+import io.github.socratone.sqlexercise.data.createHrDatabase
 import java.math.BigDecimal
 
 /** SQLite에서 반환할 수 있는 값을 플랫폼 타입과 분리해 표현합니다. */
@@ -37,10 +45,9 @@ internal fun evaluateSqlAnswer(
         ?: return SubmissionResult.QueryError("채점 데이터를 준비하지 못했습니다.")
 
     return try {
-        SQLiteDatabase.create(null).use { database ->
-            createSampleDatabase(database)
+        BundledSQLiteDriver().open(":memory:").use { database ->
+            database.createHrDatabase()
             database.execSQL("PRAGMA query_only = ON")
-
             val expectedResult = database.readQuery(validatedExpected)
             val inputResult = try {
                 database.readQuery(validatedInput)
@@ -104,62 +111,25 @@ private fun valuesAreEqual(expected: SqlValue, actual: SqlValue): Boolean = when
 private fun integerAndRealAreEqual(integer: Long, real: Double): Boolean =
     real.isFinite() && BigDecimal.valueOf(integer).compareTo(BigDecimal.valueOf(real)) == 0
 
-private fun SQLiteDatabase.readQuery(sql: String): SqlQueryResult =
-    rawQuery(sql, null).use { cursor ->
+private fun SQLiteConnection.readQuery(sql: String): SqlQueryResult =
+    prepare(sql).use { statement ->
         val rows = buildList {
-            while (cursor.moveToNext()) {
-                add(cursor.readRow())
+            while (statement.step()) {
+                add(statement.readRow())
             }
         }
-        SqlQueryResult(columnCount = cursor.columnCount, rows = rows)
+        SqlQueryResult(columnCount = statement.getColumnCount(), rows = rows)
     }
 
-private fun Cursor.readRow(): List<SqlValue> = List(columnCount) { columnIndex ->
-    when (getType(columnIndex)) {
-        Cursor.FIELD_TYPE_NULL -> SqlValue.Null
-        Cursor.FIELD_TYPE_INTEGER -> SqlValue.Integer(getLong(columnIndex))
-        Cursor.FIELD_TYPE_FLOAT -> SqlValue.Real(getDouble(columnIndex))
-        Cursor.FIELD_TYPE_STRING -> SqlValue.Text(getString(columnIndex))
-        Cursor.FIELD_TYPE_BLOB -> SqlValue.Blob(getBlob(columnIndex).toList())
+private fun SQLiteStatement.readRow(): List<SqlValue> = List(getColumnCount()) { columnIndex ->
+    when (getColumnType(columnIndex)) {
+        SQLITE_DATA_NULL -> SqlValue.Null
+        SQLITE_DATA_INTEGER -> SqlValue.Integer(getLong(columnIndex))
+        SQLITE_DATA_FLOAT -> SqlValue.Real(getDouble(columnIndex))
+        SQLITE_DATA_TEXT -> SqlValue.Text(getText(columnIndex))
+        SQLITE_DATA_BLOB -> SqlValue.Blob(getBlob(columnIndex).toList())
         else -> error("Unsupported SQLite value type")
     }
-}
-
-private fun createSampleDatabase(database: SQLiteDatabase) {
-    database.execSQL(
-        """
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            age INTEGER NOT NULL,
-            city TEXT
-        )
-        """.trimIndent(),
-    )
-    database.execSQL(
-        """
-        CREATE TABLE orders (
-            id INTEGER PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            amount REAL NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-        """.trimIndent(),
-    )
-
-    listOf(
-        "INSERT INTO users VALUES (1, 'Charlie', 25, 'Seoul')",
-        "INSERT INTO users VALUES (2, 'Alice', 19, 'Busan')",
-        "INSERT INTO users VALUES (3, 'Eve', 32, 'Seoul')",
-        "INSERT INTO users VALUES (4, 'Bob', 20, NULL)",
-        "INSERT INTO users VALUES (5, 'Dana', 21, 'Busan')",
-        "INSERT INTO orders VALUES (1, 1, 150.0)",
-        "INSERT INTO orders VALUES (2, 1, 50.0)",
-        "INSERT INTO orders VALUES (3, 2, 200.0)",
-        "INSERT INTO orders VALUES (4, 3, 120.0)",
-        "INSERT INTO orders VALUES (5, 3, 100.0)",
-        "INSERT INTO orders VALUES (6, 5, 101.0)",
-    ).forEach(database::execSQL)
 }
 
 /**

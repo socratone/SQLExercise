@@ -29,8 +29,8 @@ class SqlAnswerEvaluatorInstrumentedTest {
     @Test
     fun acceptsDifferentSqlThatReturnsTheSameResult() {
         val result = evaluateSqlAnswer(
-            input = "SELECT id, name, age, city FROM users",
-            expected = "SELECT * FROM users",
+            input = "SELECT employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, commission_pct, manager_id, department_id FROM employees",
+            expected = "SELECT * FROM employees",
             orderSensitive = false,
         )
 
@@ -42,16 +42,16 @@ class SqlAnswerEvaluatorInstrumentedTest {
         assertEquals(
             SubmissionResult.Incorrect,
             evaluateSqlAnswer(
-                input = "SELECT name FROM users",
-                expected = "SELECT city FROM users",
+                input = "SELECT first_name FROM employees",
+                expected = "SELECT last_name FROM employees",
                 orderSensitive = false,
             ),
         )
         assertEquals(
             SubmissionResult.Incorrect,
             evaluateSqlAnswer(
-                input = "SELECT * FROM users ORDER BY id",
-                expected = "SELECT * FROM users ORDER BY name",
+                input = "SELECT * FROM employees ORDER BY employee_id",
+                expected = "SELECT * FROM employees ORDER BY salary DESC, employee_id",
                 orderSensitive = true,
             ),
         )
@@ -60,18 +60,18 @@ class SqlAnswerEvaluatorInstrumentedTest {
     @Test
     fun reportsSyntaxAndNonQueryStatementsAsErrors() {
         val syntaxError = evaluateSqlAnswer(
-            input = "SELECT FROM users",
-            expected = "SELECT * FROM users",
+            input = "SELECT FROM employees",
+            expected = "SELECT * FROM employees",
             orderSensitive = false,
         )
         val writeStatement = evaluateSqlAnswer(
-            input = "DELETE FROM users",
-            expected = "SELECT * FROM users",
+            input = "DELETE FROM employees",
+            expected = "SELECT * FROM employees",
             orderSensitive = false,
         )
         val multipleStatements = evaluateSqlAnswer(
-            input = "SELECT * FROM users; SELECT * FROM orders",
-            expected = "SELECT * FROM users",
+            input = "SELECT * FROM employees; SELECT * FROM jobs",
+            expected = "SELECT * FROM employees",
             orderSensitive = false,
         )
 

@@ -32,5 +32,6 @@ class LevelListScreenTest {
         composeRule.onNodeWithText("1 level").assertIsDisplayed().performClick()
         assertEquals(1, selectedId)
         composeRule.onNodeWithText("10 level").assertExists()
+        composeRule.onNodeWithText("1단계 · 기본 조회").assertIsDisplayed()
     }
 }

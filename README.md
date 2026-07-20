@@ -4,10 +4,12 @@ SQL 문제를 레벨별로 풀어볼 수 있는 Kotlin Android 앱입니다. Jet
 
 ## 현재 기능
 
-- `1 level`부터 `10 level`까지 세로 레벨 목록 제공
+- 기초 조회부터 고급 분석까지 8단계, 70개 SQL 문제 제공
+- 단계별 학습 목표와 문제 목록 제공
 - 전체 너비의 outline 버튼을 통한 문제 상세 화면 이동
 - 레벨별 SQL 문제와 정답 샘플 데이터 제공
 - 여러 줄 SQL 입력, 초기화, 제출 기능
+- 문제 화면에서 접어서 확인할 수 있는 HR 데이터베이스 스키마 제공
 - 앱 내부 SQLite에서 사용자 SQL과 정답 SQL을 실행한 결과 기반 채점
 - 일반 문제는 행 순서를 무시하고 `ORDER BY` 문제는 행 순서까지 비교
 - 잘못된 문법이나 조회가 아닌 SQL에 대한 실행 오류 표시
@@ -15,7 +17,9 @@ SQL 문제를 레벨별로 풀어볼 수 있는 Kotlin Android 앱입니다. Jet
 - 시스템 설정과 관계없이 고정 다크 테마 적용
 - 로딩, 콘텐츠, 오류 상태를 분리한 Compose UI 구조
 
-현재 문제, 정답 SQL, `users`와 `orders` 샘플 데이터는 앱 내부에 있습니다. 제출할 때마다 새 인메모리 SQLite 데이터베이스를 생성하고 사용자 SQL과 정답 SQL을 같은 데이터에서 실행하므로, SQL 문자열이 달라도 결과가 같으면 정답으로 판단합니다. 데이터 준비 후 데이터베이스를 읽기 전용으로 전환하며 하나의 `SELECT` 또는 `WITH` 조회문만 허용합니다.
+현재 문제, 정답 SQL과 `regions`, `countries`, `locations`, `departments`, `jobs`, `employees`, `job_history` 데이터는 앱 내부에 있습니다. 50명의 직원을 포함한 고정 HR 데이터로 조인, 서브쿼리, 윈도 함수와 재귀 CTE 문제까지 연습할 수 있습니다.
+
+제출할 때마다 AndroidX Bundled SQLite 인메모리 데이터베이스를 생성하고 사용자 SQL과 정답 SQL을 같은 데이터에서 실행하므로 SQL 문자열이 달라도 결과가 같으면 정답으로 판단합니다. 데이터 준비 후 데이터베이스를 읽기 전용으로 전환하며 하나의 `SELECT` 또는 `WITH` 조회문만 허용합니다.
 
 ## 기술 구성
 
@@ -23,6 +27,7 @@ SQL 문제를 레벨별로 풀어볼 수 있는 Kotlin Android 앱입니다. Jet
 - Jetpack Compose
 - Material 3
 - Navigation Compose
+- AndroidX Bundled SQLite
 - JUnit
 - Compose UI Test
 
@@ -33,17 +38,19 @@ SQL 문제를 레벨별로 풀어볼 수 있는 Kotlin Android 앱입니다. Jet
 ```text
 app/src/main/java/io/github/socratone/sqlexercise/
 ├── MainActivity.kt                 # 앱 진입점과 고정 다크 시스템 바 설정
+├── data/
+│   └── HrDatabaseFixture.kt        # HR 스키마와 고정 샘플 데이터
 └── ui/
     ├── SQLExerciseApp.kt           # 목록과 상세 화면 내비게이션
     ├── LevelListScreen.kt          # 레벨 목록 UI
     ├── LevelDetailScreen.kt        # 문제, SQL 입력, 초기화 및 제출 UI
     ├── LevelUiState.kt             # 목록/상세 데이터 모델과 UI 상태
-    ├── SampleExercises.kt          # 레벨별 임시 문제와 정답
+    ├── SampleExercises.kt          # 8단계 70개 문제와 정답 SQL
     ├── SqlAnswerEvaluator.kt       # 인메모리 SQLite 실행과 결과 비교 채점
     └── theme/                      # 고정 다크 색상, 글꼴 및 Compose 테마
 ```
 
-프로젝트의 기본 폴더와 Gradle 파일에 대한 설명은 [초기 파일과 폴더 구성](docs/initial-project-structure.md)에서 확인할 수 있습니다.
+테이블 관계는 [HR 데이터베이스 스키마](docs/hr-schema.md), 전체 학습 순서는 [SQL 단계별 연습 문제](docs/sql-exercise-roadmap.md)에서 확인할 수 있습니다.
 
 ## 실행 방법
 

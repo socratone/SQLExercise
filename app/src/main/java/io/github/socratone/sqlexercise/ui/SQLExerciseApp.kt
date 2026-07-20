@@ -21,7 +21,11 @@ fun SQLExerciseApp() {
     // 목록 화면에는 정답을 노출할 필요가 없으므로 제목과 ID만 추려서 전달합니다.
     val levels = remember(exercises) {
         exercises.map { exercise ->
-            LevelSummary(id = exercise.id, title = exercise.levelTitle)
+            LevelSummary(
+                id = exercise.id,
+                title = exercise.levelTitle,
+                stage = exercise.stage,
+            )
         }
     }
 

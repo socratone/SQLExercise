@@ -65,13 +65,28 @@ fun LevelListScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(items = levels, key = LevelSummary::id) { level ->
-            OutlinedButton(
-                onClick = { onLevelClick(level.id) },
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = 16.dp),
-            ) {
-                Text(level.title)
+        levels.groupBy(LevelSummary::stage).forEach { (stage, stageLevels) ->
+            item(key = "stage-${stage.name}") {
+                androidx.compose.foundation.layout.Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(stage.title, style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                    Text(
+                        stage.learningGoal,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            items(items = stageLevels, key = LevelSummary::id) { level ->
+                OutlinedButton(
+                    onClick = { onLevelClick(level.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 16.dp),
+                ) {
+                    Text(level.title)
+                }
             }
         }
     }
@@ -83,7 +98,9 @@ private fun LevelListPreview() {
     SQLExerciseTheme {
         LevelListRoute(
             uiState = LevelListUiState.Content(
-                (1..10).map { LevelSummary(it, "$it level") },
+                (1..10).map {
+                    LevelSummary(it, "$it level", ExerciseStage.fromExerciseId(it))
+                },
             ),
             onLevelClick = {},
         )

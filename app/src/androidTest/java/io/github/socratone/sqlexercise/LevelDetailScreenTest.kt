@@ -19,9 +19,9 @@ class LevelDetailScreenTest {
 
     private val exercise = LevelExercise(
         id = 1,
-        levelTitle = "1 level",
-        question = "users 테이블의 모든 데이터를 조회하세요.",
-        expectedSql = "SELECT * FROM users",
+        levelTitle = "문제 1 · 전체 직원 조회",
+        question = "employees 테이블의 모든 데이터를 조회하세요.",
+        expectedSql = "SELECT * FROM employees",
     )
 
     @Test
@@ -50,7 +50,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "SELECT * FROM users",
+                    sqlInput = "SELECT * FROM employees",
                     submissionResult = SubmissionResult.Correct,
                     onInputChange = {},
                     onReset = { resetCalled = true },
@@ -69,7 +69,7 @@ class LevelDetailScreenTest {
             SQLExerciseTheme {
                 LevelDetailScreen(
                     exercise = exercise,
-                    sqlInput = "SELECT FROM users",
+                    sqlInput = "SELECT FROM employees",
                     submissionResult = SubmissionResult.QueryError("SQL 실행 오류: 문법을 확인해 주세요."),
                     onInputChange = {},
                     onReset = {},
@@ -79,5 +79,47 @@ class LevelDetailScreenTest {
         }
 
         composeRule.onNodeWithText("SQL 실행 오류: 문법을 확인해 주세요.").assertIsDisplayed()
+    }
+
+    @Test
+    fun expandsSchemaReference() {
+        var expanded = false
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = "",
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                    schemaExpanded = expanded,
+                    onSchemaToggle = { expanded = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("스키마 보기").performClick()
+        composeRule.runOnIdle { assertTrue(expanded) }
+    }
+
+    @Test
+    fun showsSchemaContentsWhenExpanded() {
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = "",
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                    schemaExpanded = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("HR 데이터베이스 스키마").assertIsDisplayed()
+        composeRule.onNodeWithText("스키마 접기").assertIsDisplayed()
     }
 }
