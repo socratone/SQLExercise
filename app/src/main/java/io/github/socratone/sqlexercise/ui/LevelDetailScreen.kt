@@ -59,6 +59,7 @@ private val SubmissionResultSaver = Saver<SubmissionResult, String>(
 fun LevelDetailRoute(
     uiState: LevelDetailUiState,
     onBackClick: () -> Unit,
+    onExerciseCompleted: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val exercise = (uiState as? LevelDetailUiState.Content)?.exercise
@@ -84,6 +85,7 @@ fun LevelDetailRoute(
             )
             is LevelDetailUiState.Content -> LevelDetailContent(
                 exercise = uiState.exercise,
+                onExerciseCompleted = onExerciseCompleted,
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -97,6 +99,7 @@ fun LevelDetailRoute(
 @Composable
 private fun LevelDetailContent(
     exercise: LevelExercise,
+    onExerciseCompleted: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // 화면 회전이나 프로세스 복원 시에도 현재 문제의 입력 내용을 유지합니다.
@@ -121,11 +124,15 @@ private fun LevelDetailContent(
             submissionResult = SubmissionResult.NotSubmitted
         },
         onSubmit = {
-            submissionResult = evaluateSqlAnswer(
+            val result = evaluateSqlAnswer(
                 input = sqlInput,
                 expected = exercise.expectedSql,
                 orderSensitive = exercise.orderSensitive,
             )
+            submissionResult = result
+            if (result == SubmissionResult.Correct) {
+                onExerciseCompleted(exercise.id)
+            }
         },
         schemaExpanded = schemaExpanded,
         onSchemaToggle = { schemaExpanded = !schemaExpanded },

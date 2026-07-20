@@ -5,6 +5,7 @@ data class LevelSummary(
     val id: Int,
     val title: String,
     val stage: ExerciseStage = ExerciseStage.fromExerciseId(id),
+    val isCompleted: Boolean = false,
 )
 
 enum class ExerciseStage(

@@ -12,4 +12,6 @@
     <string name="show_schema">스키마 보기</string>
     <string name="hide_schema">스키마 접기</string>
     <string name="database_schema">HR 데이터베이스 스키마</string>
+    <string name="completed">완료</string>
+    <string name="not_completed">미완료</string>
 </resources>

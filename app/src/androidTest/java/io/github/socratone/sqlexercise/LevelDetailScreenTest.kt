@@ -5,7 +5,10 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import io.github.socratone.sqlexercise.ui.LevelDetailRoute
 import io.github.socratone.sqlexercise.ui.LevelDetailScreen
+import io.github.socratone.sqlexercise.ui.LevelDetailUiState
 import io.github.socratone.sqlexercise.ui.LevelExercise
 import io.github.socratone.sqlexercise.ui.SubmissionResult
 import io.github.socratone.sqlexercise.ui.theme.SQLExerciseTheme
@@ -121,5 +124,26 @@ class LevelDetailScreenTest {
 
         composeRule.onNodeWithText("HR 데이터베이스 스키마").assertIsDisplayed()
         composeRule.onNodeWithText("스키마 접기").assertIsDisplayed()
+    }
+
+    @Test
+    fun correctSubmissionReportsCompletedExercise() {
+        var completedExerciseId: Int? = null
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailRoute(
+                    uiState = LevelDetailUiState.Content(exercise),
+                    onBackClick = {},
+                    onExerciseCompleted = { completedExerciseId = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("SQL을 입력하세요").performTextInput(exercise.expectedSql)
+        composeRule.onNodeWithText("제출").performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(completedExerciseId == exercise.id)
+        }
     }
 }
