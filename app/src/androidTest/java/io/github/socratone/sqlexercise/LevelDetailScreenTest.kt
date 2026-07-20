@@ -62,4 +62,22 @@ class LevelDetailScreenTest {
         composeRule.onNodeWithText("초기화").performClick()
         assertTrue(resetCalled)
     }
+
+    @Test
+    fun showsQueryErrorsSeparatelyFromIncorrectAnswers() {
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = "SELECT FROM users",
+                    submissionResult = SubmissionResult.QueryError("SQL 실행 오류: 문법을 확인해 주세요."),
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("SQL 실행 오류: 문법을 확인해 주세요.").assertIsDisplayed()
+    }
 }

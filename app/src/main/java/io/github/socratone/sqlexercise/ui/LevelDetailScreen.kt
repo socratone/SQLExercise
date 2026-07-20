@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,6 +32,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.socratone.sqlexercise.R
 import io.github.socratone.sqlexercise.ui.theme.SQLExerciseTheme
+
+private val SubmissionResultSaver = Saver<SubmissionResult, String>(
+    save = { result ->
+        when (result) {
+            SubmissionResult.NotSubmitted -> "not-submitted"
+            SubmissionResult.Correct -> "correct"
+            SubmissionResult.Incorrect -> "incorrect"
+            is SubmissionResult.QueryError -> "query-error:${result.message}"
+        }
+    },
+    restore = { saved ->
+        when (saved) {
+            "not-submitted" -> SubmissionResult.NotSubmitted
+            "correct" -> SubmissionResult.Correct
+            "incorrect" -> SubmissionResult.Incorrect
+            else -> SubmissionResult.QueryError(saved.removePrefix("query-error:"))
+        }
+    },
+)
 
 /** 상세 화면의 공통 상단 바와 로딩, 성공, 실패 상태를 분기합니다. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +100,7 @@ private fun LevelDetailContent(
 ) {
     // 화면 회전이나 프로세스 복원 시에도 현재 문제의 입력 내용을 유지합니다.
     var sqlInput by rememberSaveable(exercise.id) { mutableStateOf("") }
-    var submissionResult by rememberSaveable(exercise.id) {
+    var submissionResult by rememberSaveable(exercise.id, stateSaver = SubmissionResultSaver) {
         mutableStateOf(SubmissionResult.NotSubmitted)
     }
 
@@ -102,6 +122,7 @@ private fun LevelDetailContent(
             submissionResult = evaluateSqlAnswer(
                 input = sqlInput,
                 expected = exercise.expectedSql,
+                orderSensitive = exercise.orderSensitive,
             )
         },
         modifier = modifier,
@@ -184,6 +205,10 @@ private fun SubmissionFeedback(result: SubmissionResult) {
         }
         SubmissionResult.Incorrect -> {
             message = stringResource(R.string.incorrect_answer)
+            color = MaterialTheme.colorScheme.error
+        }
+        is SubmissionResult.QueryError -> {
+            message = result.message
             color = MaterialTheme.colorScheme.error
         }
     }

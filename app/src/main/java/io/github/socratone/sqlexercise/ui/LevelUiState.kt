@@ -15,13 +15,15 @@ data class LevelExercise(
     val levelTitle: String,
     val question: String,
     val expectedSql: String,
+    val orderSensitive: Boolean = false,
 )
 
 /** 아직 제출하지 않은 상태를 포함한 SQL 채점 결과입니다. */
-enum class SubmissionResult {
-    NotSubmitted,
-    Correct,
-    Incorrect,
+sealed interface SubmissionResult {
+    data object NotSubmitted : SubmissionResult
+    data object Correct : SubmissionResult
+    data object Incorrect : SubmissionResult
+    data class QueryError(val message: String) : SubmissionResult
 }
 
 /** 레벨 목록의 로딩, 성공, 실패 상태를 한 타입으로 관리합니다. */

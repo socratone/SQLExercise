@@ -28,6 +28,7 @@ internal val sampleExercises = listOf(
         levelTitle = "4 level",
         question = "users 테이블의 데이터를 name 오름차순으로 조회하세요.",
         expectedSql = "SELECT * FROM users ORDER BY name ASC",
+        orderSensitive = true,
     ),
     LevelExercise(
         id = 5,
