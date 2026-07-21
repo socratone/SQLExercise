@@ -483,27 +483,34 @@ internal fun SqlInputAccessoryBar(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
                 FilterChip(
                     selected = !showTableTokens,
                     onClick = { onCategorySelected(false) },
                     label = { Text(stringResource(R.string.sql_keywords)) },
                 )
+                Spacer(modifier = Modifier.size(8.dp))
                 FilterChip(
                     selected = showTableTokens,
                     onClick = { onCategorySelected(true) },
                     label = { Text(stringResource(R.string.sql_tables)) },
                 )
-                sqlSymbolTokens.forEach { symbol ->
-                    AssistChip(
-                        onClick = { onSymbolClick(symbol) },
-                        label = {
-                            Text(
-                                text = symbol,
-                                fontFamily = FontFamily.Monospace,
-                            )
-                        },
-                    )
+                Spacer(modifier = Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    sqlSymbolTokens.forEach { symbol ->
+                        AssistChip(
+                            onClick = { onSymbolClick(symbol) },
+                            label = {
+                                Text(
+                                    text = symbol,
+                                    fontFamily = FontFamily.Monospace,
+                                )
+                            },
+                        )
+                    }
                 }
             }
             SqlTokenChips(
