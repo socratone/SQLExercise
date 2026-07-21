@@ -9,12 +9,12 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import io.github.socratone.sqlexercise.ui.LevelDetailRoute
 import io.github.socratone.sqlexercise.ui.LevelDetailScreen
 import io.github.socratone.sqlexercise.ui.LevelDetailUiState
 import io.github.socratone.sqlexercise.ui.LevelExercise
+import io.github.socratone.sqlexercise.ui.SqlInputAccessoryBar
 import io.github.socratone.sqlexercise.ui.SubmissionResult
 import io.github.socratone.sqlexercise.ui.theme.SQLExerciseTheme
 import org.junit.Assert.assertTrue
@@ -133,17 +133,15 @@ class LevelDetailScreenTest {
     }
 
     @Test
-    fun quickInputShowsGroupsAndInsertsSelectedToken() {
-        var updatedInput: TextFieldValue? = null
+    fun inputAccessoryShowsCategoriesAndKeywordTokens() {
+        var selectedToken: String? = null
+        var selectedTableCategory: Boolean? = null
         composeRule.setContent {
             SQLExerciseTheme {
-                LevelDetailScreen(
-                    exercise = exercise,
-                    sqlInput = TextFieldValue(),
-                    submissionResult = SubmissionResult.NotSubmitted,
-                    onInputChange = { updatedInput = it },
-                    onReset = {},
-                    onSubmit = {},
+                SqlInputAccessoryBar(
+                    showTableTokens = false,
+                    onCategorySelected = { selectedTableCategory = it },
+                    onTokenClick = { selectedToken = it },
                 )
             }
         }
@@ -151,25 +149,23 @@ class LevelDetailScreenTest {
         composeRule.onNodeWithText("키워드").assertIsDisplayed()
         composeRule.onNodeWithText("테이블").assertIsDisplayed()
         composeRule.onNodeWithText("SELECT").performClick()
+        composeRule.onNodeWithText("테이블").performClick()
 
         composeRule.runOnIdle {
-            assertTrue(updatedInput?.text == "SELECT ")
-            assertTrue(updatedInput?.selection?.start == 7)
+            assertTrue(selectedToken == "SELECT")
+            assertTrue(selectedTableCategory == true)
         }
     }
 
     @Test
-    fun tableChipInsertsTableName() {
-        var updatedInput: TextFieldValue? = null
+    fun inputAccessoryShowsAndSelectsTableTokens() {
+        var selectedToken: String? = null
         composeRule.setContent {
             SQLExerciseTheme {
-                LevelDetailScreen(
-                    exercise = exercise,
-                    sqlInput = TextFieldValue("SELECT ", TextRange(7)),
-                    submissionResult = SubmissionResult.NotSubmitted,
-                    onInputChange = { updatedInput = it },
-                    onReset = {},
-                    onSubmit = {},
+                SqlInputAccessoryBar(
+                    showTableTokens = true,
+                    onCategorySelected = {},
+                    onTokenClick = { selectedToken = it },
                 )
             }
         }
@@ -177,7 +173,7 @@ class LevelDetailScreenTest {
         composeRule.onNodeWithText("employees").performScrollTo().performClick()
 
         composeRule.runOnIdle {
-            assertTrue(updatedInput?.text == "SELECT employees ")
+            assertTrue(selectedToken == "employees")
         }
     }
 

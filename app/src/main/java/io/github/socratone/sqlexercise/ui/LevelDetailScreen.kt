@@ -1,31 +1,35 @@
 package io.github.socratone.sqlexercise.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -117,8 +121,7 @@ internal fun insertSqlToken(value: TextFieldValue, token: String): TextFieldValu
     )
 }
 
-/** 상세 화면의 공통 상단 바와 로딩, 성공, 실패 상태를 분기합니다. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** 상세 화면의 로딩, 성공, 실패 상태를 분기합니다. */
 @Composable
 fun LevelDetailRoute(
     uiState: LevelDetailUiState,
@@ -132,35 +135,71 @@ fun LevelDetailRoute(
 ) {
     val exercise = (uiState as? LevelDetailUiState.Content)?.exercise
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(exercise?.levelTitle.orEmpty()) },
-                navigationIcon = {
-                    TextButton(onClick = onBackClick) {
-                        Text(stringResource(R.string.back))
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        when (uiState) {
-            LevelDetailUiState.Loading -> LoadingContent(Modifier.padding(innerPadding))
-            LevelDetailUiState.Error -> MessageContent(
+    when (uiState) {
+        LevelDetailUiState.Loading -> DetailStateContent(
+            title = exercise?.levelTitle.orEmpty(),
+            onBackClick = onBackClick,
+            modifier = modifier,
+        ) { contentModifier -> LoadingContent(contentModifier) }
+        LevelDetailUiState.Error -> DetailStateContent(
+            title = exercise?.levelTitle.orEmpty(),
+            onBackClick = onBackClick,
+            modifier = modifier,
+        ) { contentModifier ->
+            MessageContent(
                 message = stringResource(R.string.load_failed),
-                modifier = Modifier.padding(innerPadding),
-            )
-            is LevelDetailUiState.Content -> LevelDetailContent(
-                exercise = uiState.exercise,
-                onExerciseCompleted = onExerciseCompleted,
-                previousEnabled = previousEnabled,
-                nextEnabled = nextEnabled,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                modifier = Modifier.padding(innerPadding),
+                modifier = contentModifier,
             )
         }
+        is LevelDetailUiState.Content -> LevelDetailContent(
+            exercise = uiState.exercise,
+            onBackClick = onBackClick,
+            onExerciseCompleted = onExerciseCompleted,
+            previousEnabled = previousEnabled,
+            nextEnabled = nextEnabled,
+            onPreviousClick = onPreviousClick,
+            onNextClick = onNextClick,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun DetailStateContent(
+    title: String,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (Modifier) -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        DetailHeader(title = title, onBackClick = onBackClick)
+        content(Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun DetailHeader(
+    title: String,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onBackClick) {
+            Text(stringResource(R.string.back))
+        }
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+        )
     }
 }
 
@@ -171,6 +210,7 @@ fun LevelDetailRoute(
 @Composable
 private fun LevelDetailContent(
     exercise: LevelExercise,
+    onBackClick: () -> Unit,
     onExerciseCompleted: (Int) -> Unit,
     previousEnabled: Boolean,
     nextEnabled: Boolean,
@@ -189,6 +229,7 @@ private fun LevelDetailContent(
 
     LevelDetailScreen(
         exercise = exercise,
+        onBackClick = onBackClick,
         sqlInput = sqlInput,
         submissionResult = submissionResult,
         onInputChange = { updatedSql ->
@@ -229,6 +270,7 @@ private fun LevelDetailContent(
  * 전달받은 데이터와 이벤트만 사용해 문제, 입력창, 동작 버튼을 그리는 상태 없는 UI입니다.
  * 이 구조 덕분에 데이터 출처가 로컬에서 API로 바뀌어도 화면 코드를 재사용할 수 있습니다.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LevelDetailScreen(
     exercise: LevelExercise,
@@ -244,170 +286,218 @@ fun LevelDetailScreen(
     modifier: Modifier = Modifier,
     schemaExpanded: Boolean = false,
     onSchemaToggle: () -> Unit = {},
+    onBackClick: () -> Unit = {},
 ) {
     val sqlInputFocusRequester = remember { FocusRequester() }
+    val contentScrollState = rememberScrollState()
+    val isImeVisible = WindowInsets.isImeVisible
+    var showTableTokens by rememberSaveable(exercise.id) { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            // 키보드가 버튼과 피드백을 가리지 않도록 키보드 높이만큼 여백을 확보합니다.
-            .imePadding()
-            // 작은 화면이나 키보드가 열린 상태에서도 전체 콘텐츠에 접근할 수 있게 합니다.
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    LaunchedEffect(exercise.id, isImeVisible) {
+        if (!isImeVisible) {
+            contentScrollState.scrollTo(0)
+        }
+    }
+
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding(),
         ) {
-            Row(
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(contentScrollState)
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                DetailHeader(
+                    title = exercise.levelTitle,
+                    onBackClick = onBackClick,
+                )
+                Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.question),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = onPreviousClick,
+                        enabled = previousEnabled,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.previous_exercise),
+                        )
+                    }
+                    IconButton(
+                        onClick = onNextClick,
+                        enabled = nextEnabled,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_forward),
+                            contentDescription = stringResource(R.string.next_exercise),
+                        )
+                    }
+                }
+                Text(
+                    text = exercise.question,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            OutlinedButton(
+                onClick = onSchemaToggle,
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.question),
-                    style = MaterialTheme.typography.titleLarge,
+                    stringResource(
+                        if (schemaExpanded) R.string.hide_schema else R.string.show_schema,
+                    ),
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(
-                    onClick = onPreviousClick,
-                    enabled = previousEnabled,
-                    modifier = Modifier.size(40.dp),
+            }
+            if (schemaExpanded) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = MaterialTheme.shapes.medium,
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.previous_exercise),
-                    )
-                }
-                IconButton(
-                    onClick = onNextClick,
-                    enabled = nextEnabled,
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow_forward),
-                        contentDescription = stringResource(R.string.next_exercise),
-                    )
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.database_schema),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = hrSchemaReference,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                            ),
+                        )
+                    }
                 }
             }
-            Text(
-                text = exercise.question,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-        OutlinedButton(
-            onClick = onSchemaToggle,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                stringResource(
-                    if (schemaExpanded) R.string.hide_schema else R.string.show_schema,
+            OutlinedTextField(
+                value = sqlInput,
+                onValueChange = onInputChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(sqlInputFocusRequester),
+                label = { Text(stringResource(R.string.sql_input_label)) },
+                minLines = 8,
+                maxLines = 12,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    fontFamily = FontFamily.Monospace,
                 ),
             )
-        }
-        if (schemaExpanded) {
-            Surface(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.medium,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                OutlinedButton(
+                    onClick = onReset,
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Text(
-                        text = stringResource(R.string.database_schema),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        text = hrSchemaReference,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                    )
+                    Text(stringResource(R.string.reset))
+                }
+                Button(
+                    onClick = onSubmit,
+                    modifier = Modifier.weight(1f),
+                    enabled = sqlInput.text.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.submit))
                 }
             }
-        }
-        SqlQuickInputSection(
-            onTokenClick = { token ->
-                onInputChange(insertSqlToken(sqlInput, token))
-                sqlInputFocusRequester.requestFocus()
-            },
-        )
-        OutlinedTextField(
-            value = sqlInput,
-            onValueChange = onInputChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(sqlInputFocusRequester),
-            label = { Text(stringResource(R.string.sql_input_label)) },
-            minLines = 8,
-            maxLines = 12,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OutlinedButton(
-                onClick = onReset,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(stringResource(R.string.reset))
+                SubmissionFeedback(submissionResult)
             }
-            Button(
-                onClick = onSubmit,
-                modifier = Modifier.weight(1f),
-                enabled = sqlInput.text.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.submit))
-            }
-        }
-        SubmissionFeedback(submissionResult)
-    }
-}
 
-@Composable
-private fun SqlQuickInputSection(
-    onTokenClick: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SqlQuickInputRow(
-            title = stringResource(R.string.sql_keywords),
-            tokens = sqlKeywordTokens,
-            onTokenClick = onTokenClick,
-        )
-        SqlQuickInputRow(
-            title = stringResource(R.string.sql_tables),
-            tokens = sqlTableTokens,
-            onTokenClick = onTokenClick,
-        )
-    }
-}
-
-@Composable
-private fun SqlQuickInputRow(
-    title: String,
-    tokens: List<String>,
-    onTokenClick: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = title, style = MaterialTheme.typography.labelLarge)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            tokens.forEach { token ->
-                AssistChip(
-                    onClick = { onTokenClick(token) },
-                    label = {
-                        Text(
-                            text = token,
-                            fontFamily = FontFamily.Monospace,
-                        )
+            if (isImeVisible) {
+                SqlInputAccessoryBar(
+                    showTableTokens = showTableTokens,
+                    onCategorySelected = { showTables -> showTableTokens = showTables },
+                    onTokenClick = { token ->
+                        onInputChange(insertSqlToken(sqlInput, token))
+                        sqlInputFocusRequester.requestFocus()
                     },
                 )
             }
+        }
+    }
+}
+
+@Composable
+internal fun SqlInputAccessoryBar(
+    showTableTokens: Boolean,
+    onCategorySelected: (Boolean) -> Unit,
+    onTokenClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 3.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !showTableTokens,
+                    onClick = { onCategorySelected(false) },
+                    label = { Text(stringResource(R.string.sql_keywords)) },
+                )
+                FilterChip(
+                    selected = showTableTokens,
+                    onClick = { onCategorySelected(true) },
+                    label = { Text(stringResource(R.string.sql_tables)) },
+                )
+            }
+            SqlTokenChips(
+                tokens = if (showTableTokens) sqlTableTokens else sqlKeywordTokens,
+                onTokenClick = onTokenClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SqlTokenChips(
+    tokens: List<String>,
+    onTokenClick: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        tokens.forEach { token ->
+            AssistChip(
+                onClick = { onTokenClick(token) },
+                label = {
+                    Text(
+                        text = token,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                },
+            )
         }
     }
 }
