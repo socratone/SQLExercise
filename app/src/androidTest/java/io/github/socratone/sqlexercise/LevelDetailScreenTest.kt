@@ -3,8 +3,10 @@ package io.github.socratone.sqlexercise
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -130,6 +132,68 @@ class LevelDetailScreenTest {
 
         composeRule.onNodeWithText("HR 데이터베이스 스키마").assertIsDisplayed()
         composeRule.onNodeWithText("스키마 접기").assertIsDisplayed()
+    }
+
+    @Test
+    fun expandsSqliteSyntaxReference() {
+        var expanded = false
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = TextFieldValue(),
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                    sqliteSyntaxExpanded = expanded,
+                    onSqliteSyntaxToggle = { expanded = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("SQLite 문법 보기").performClick()
+        composeRule.runOnIdle { assertTrue(expanded) }
+    }
+
+    @Test
+    fun showsSqliteSyntaxContentsWhenExpanded() {
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailScreen(
+                    exercise = exercise,
+                    sqlInput = TextFieldValue(),
+                    submissionResult = SubmissionResult.NotSubmitted,
+                    onInputChange = {},
+                    onReset = {},
+                    onSubmit = {},
+                    sqliteSyntaxExpanded = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("SQLite 문법 안내").assertIsDisplayed()
+        composeRule.onNodeWithText("SQLite 문법 접기").assertIsDisplayed()
+        composeRule.onNodeWithText("문자열 연결", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun switchesBetweenReferencePanels() {
+        composeRule.setContent {
+            SQLExerciseTheme {
+                LevelDetailRoute(
+                    uiState = LevelDetailUiState.Content(exercise),
+                    onBackClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("스키마 보기").performClick()
+        composeRule.onNodeWithText("HR 데이터베이스 스키마").assertIsDisplayed()
+
+        composeRule.onNodeWithText("SQLite 문법 보기").performClick()
+        composeRule.onNodeWithText("SQLite 문법 안내").assertIsDisplayed()
+        composeRule.onAllNodesWithText("HR 데이터베이스 스키마").assertCountEquals(0)
     }
 
     @Test

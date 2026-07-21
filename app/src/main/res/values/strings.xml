@@ -14,6 +14,9 @@
     <string name="show_schema">스키마 보기</string>
     <string name="hide_schema">스키마 접기</string>
     <string name="database_schema">HR 데이터베이스 스키마</string>
+    <string name="show_sqlite_syntax">SQLite 문법 보기</string>
+    <string name="hide_sqlite_syntax">SQLite 문법 접기</string>
+    <string name="sqlite_syntax_guide">SQLite 문법 안내</string>
     <string name="sql_keywords">키워드</string>
     <string name="sql_tables">테이블</string>
     <string name="completed">완료</string>

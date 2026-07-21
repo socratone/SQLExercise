@@ -18,12 +18,13 @@ SQL 문제를 레벨별로 풀어볼 수 있는 Kotlin Android 앱입니다. Jet
 - 여러 줄 SQL 입력, 초기화, 제출 기능
 - 소프트 키보드 표시 중 SQL 키워드, 테이블명, `*`, `_` 입력 보조 칩 제공
 - 문제 화면에서 접어서 확인할 수 있는 HR 데이터베이스 스키마 제공
+- 문제 화면에서 접어서 확인할 수 있는 SQLite 문법 안내 제공
 - 앱 내부 SQLite에서 사용자 SQL과 정답 SQL을 실행한 결과 기반 채점
 - 일반 문제는 행 순서를 무시하고 `ORDER BY` 문제는 행 순서까지 비교
 - 잘못된 문법이나 조회가 아닌 SQL에 대한 실행 오류 표시
 - 정답 및 오답 결과 표시
 - 정답을 맞힌 문제를 기기 로컬에 저장하고 목록에서 완료 상태로 표시
-- 화면 회전과 상태 복원 시 문제별 SQL 입력, 채점 결과, 스키마 펼침 상태 유지
+- 화면 회전과 상태 복원 시 문제별 SQL 입력, 채점 결과, 도움말 펼침 상태 유지
 - 시스템 설정과 관계없이 고정 다크 테마 적용
 - 로딩, 콘텐츠, 오류 상태를 분리한 Compose UI 구조
 
@@ -56,6 +57,7 @@ app/src/main/java/io/github/socratone/sqlexercise/
 │   └── HrDatabaseFixture.kt        # HR 스키마와 고정 샘플 데이터
 └── ui/
     ├── HrSchemaReference.kt        # 상세 화면에 표시하는 HR 스키마 요약
+    ├── SqliteSyntaxReference.kt    # 상세 화면에 표시하는 SQLite 문법 안내
     ├── SQLExerciseApp.kt           # 목록과 상세 화면 내비게이션
     ├── LevelListScreen.kt          # 단계별 문제 목록과 완료 상태 UI
     ├── LevelDetailScreen.kt        # 문제 풀이, 입력 보조 및 이전·다음 이동 UI

@@ -95,6 +95,9 @@ internal val sqlTableTokens = listOf(
 
 private val sqlSymbolTokens = listOf("*", "_")
 
+private const val SCHEMA_REFERENCE = "schema"
+private const val SQLITE_SYNTAX_REFERENCE = "sqlite-syntax"
+
 /** 선택 영역을 SQL 토큰으로 바꾸고 주변 문맥에 필요한 공백만 추가합니다. */
 internal fun insertSqlToken(value: TextFieldValue, token: String): TextFieldValue {
     val selectionStart = value.selection.min
@@ -244,7 +247,7 @@ private fun LevelDetailContent(
     var submissionResult by rememberSaveable(exercise.id, stateSaver = SubmissionResultSaver) {
         mutableStateOf(SubmissionResult.NotSubmitted)
     }
-    var schemaExpanded by rememberSaveable(exercise.id) { mutableStateOf(false) }
+    var expandedReference by rememberSaveable(exercise.id) { mutableStateOf<String?>(null) }
 
     LevelDetailScreen(
         exercise = exercise,
@@ -275,8 +278,22 @@ private fun LevelDetailContent(
                 onExerciseCompleted(exercise.id)
             }
         },
-        schemaExpanded = schemaExpanded,
-        onSchemaToggle = { schemaExpanded = !schemaExpanded },
+        schemaExpanded = expandedReference == SCHEMA_REFERENCE,
+        onSchemaToggle = {
+            expandedReference = if (expandedReference == SCHEMA_REFERENCE) {
+                null
+            } else {
+                SCHEMA_REFERENCE
+            }
+        },
+        sqliteSyntaxExpanded = expandedReference == SQLITE_SYNTAX_REFERENCE,
+        onSqliteSyntaxToggle = {
+            expandedReference = if (expandedReference == SQLITE_SYNTAX_REFERENCE) {
+                null
+            } else {
+                SQLITE_SYNTAX_REFERENCE
+            }
+        },
         previousEnabled = previousEnabled,
         nextEnabled = nextEnabled,
         onPreviousClick = onPreviousClick,
@@ -305,6 +322,8 @@ fun LevelDetailScreen(
     modifier: Modifier = Modifier,
     schemaExpanded: Boolean = false,
     onSchemaToggle: () -> Unit = {},
+    sqliteSyntaxExpanded: Boolean = false,
+    onSqliteSyntaxToggle: () -> Unit = {},
     onBackClick: () -> Unit = {},
 ) {
     val sqlInputFocusRequester = remember { FocusRequester() }
@@ -380,38 +399,46 @@ fun LevelDetailScreen(
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
-            OutlinedButton(
-                onClick = onSchemaToggle,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    stringResource(
-                        if (schemaExpanded) R.string.hide_schema else R.string.show_schema,
-                    ),
-                )
+                OutlinedButton(
+                    onClick = onSchemaToggle,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        stringResource(
+                            if (schemaExpanded) R.string.hide_schema else R.string.show_schema,
+                        ),
+                    )
+                }
+                OutlinedButton(
+                    onClick = onSqliteSyntaxToggle,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        stringResource(
+                            if (sqliteSyntaxExpanded) {
+                                R.string.hide_sqlite_syntax
+                            } else {
+                                R.string.show_sqlite_syntax
+                            },
+                        ),
+                    )
+                }
             }
             if (schemaExpanded) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.database_schema),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = hrSchemaReference,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace,
-                            ),
-                        )
-                    }
-                }
+                ReferencePanel(
+                    title = stringResource(R.string.database_schema),
+                    body = hrSchemaReference,
+                )
+            }
+            if (sqliteSyntaxExpanded) {
+                ReferencePanel(
+                    title = stringResource(R.string.sqlite_syntax_guide),
+                    body = sqliteSyntaxReference,
+                )
             }
             OutlinedTextField(
                 value = sqlInput,
@@ -462,6 +489,35 @@ fun LevelDetailScreen(
                     },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ReferencePanel(
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                ),
+            )
         }
     }
 }
