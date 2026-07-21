@@ -70,17 +70,7 @@ app/src/main/java/io/github/socratone/sqlexercise/
 
 ## 실행 방법
 
-Android Studio에서 프로젝트를 열고 에뮬레이터 또는 Android 기기를 선택한 뒤 `app` 구성을 실행합니다.
-
-터미널에서는 프로젝트 루트에서 다음 명령어를 사용할 수 있습니다.
-
-```bash
-./gradlew assembleDebug
-```
-
-Debug APK를 빌드합니다.
-
-실기기에 설치하려면 먼저 Android의 `설정 > 개발자 옵션`에서 `USB 디버깅`을 활성화하고, USB로 기기를 연결할 때 표시되는 USB 디버깅 허용 요청을 승인합니다.
+Android 실기기의 `설정 > 개발자 옵션`에서 `USB 디버깅`을 활성화하고, USB로 기기를 연결할 때 표시되는 USB 디버깅 허용 요청을 승인합니다.
 
 연결된 기기는 다음 명령어로 확인합니다.
 
@@ -95,15 +85,3 @@ ANDROID_SERIAL=R3CT123456A ./gradlew installDebug
 ```
 
 `R3CT123456A`는 예시이므로 `adb devices -l`에 표시된 실기기 serial로 바꿔야 합니다. 이 명령어는 앱을 설치하지만 자동으로 실행하지는 않습니다.
-
-```bash
-./gradlew testDebugUnitTest
-```
-
-SQL 결과 비교 로직을 포함한 로컬 단위 테스트를 실행합니다. 실제 SQLite 실행 테스트는 연결된 기기나 에뮬레이터에서 계측 테스트로 실행됩니다.
-
-```bash
-./gradlew connectedDebugAndroidTest
-```
-
-연결된 기기나 에뮬레이터에서 HR 데이터베이스, SQLite 채점, 완료 상태 저장, 목록·상세 화면과 테마 테스트를 실행합니다.
