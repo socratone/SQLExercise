@@ -2,6 +2,12 @@
 
 SQL 문제를 레벨별로 풀어볼 수 있는 Kotlin Android 앱입니다. Jetpack Compose와 Material 3로 UI를 구성하고 Navigation Compose로 목록과 상세 화면을 연결합니다.
 
+## 앱 화면
+
+| 레벨 목록 | 문제 상세 |
+| --- | --- |
+| ![SQL 문제 레벨 목록 화면](docs/images/list.jpeg) | ![SQL 문제 상세 및 SQL 입력 화면](docs/images/detail.jpeg) |
+
 ## 현재 기능
 
 - 기초 조회부터 고급 분석까지 8단계, 70개 SQL 문제 제공
