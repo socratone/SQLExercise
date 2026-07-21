@@ -329,20 +329,22 @@ fun LevelDetailScreen(
                 .navigationBarsPadding()
                 .imePadding(),
         ) {
-            DetailHeader(
-                title = exercise.levelTitle,
-                onBackClick = onBackClick,
-            )
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(contentScrollState)
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .verticalScroll(contentScrollState),
             ) {
+                DetailHeader(
+                    title = exercise.levelTitle,
+                    onBackClick = onBackClick,
+                )
                 Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -442,7 +444,8 @@ fun LevelDetailScreen(
                     Text(stringResource(R.string.submit))
                 }
             }
-                SubmissionFeedback(submissionResult)
+                    SubmissionFeedback(submissionResult)
+                }
             }
 
             if (isImeVisible) {
