@@ -71,7 +71,6 @@ private val SubmissionResultSaver = Saver<SubmissionResult, String>(
 
 internal val sqlKeywordTokens = listOf(
     "SELECT",
-    "DISTINCT",
     "FROM",
     "WHERE",
     "JOIN",
