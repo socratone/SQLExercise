@@ -52,4 +52,17 @@ class SqlTokenInsertionTest {
         assertEquals("WHERE EXISTS (SELECT)", result.text)
         assertEquals(TextRange(20), result.selection)
     }
+
+    @Test
+    fun insertsSymbolWithoutAddingSpaces() {
+        val input = TextFieldValue(
+            text = "LIKE 'A'",
+            selection = TextRange(7),
+        )
+
+        val result = insertSqlSymbol(input, "_")
+
+        assertEquals("LIKE 'A_'", result.text)
+        assertEquals(TextRange(8), result.selection)
+    }
 }

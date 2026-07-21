@@ -94,6 +94,8 @@ internal val sqlTableTokens = listOf(
     "job_history",
 )
 
+private val sqlSymbolTokens = listOf("*", "_")
+
 /** 선택 영역을 SQL 토큰으로 바꾸고 주변 문맥에 필요한 공백만 추가합니다. */
 internal fun insertSqlToken(value: TextFieldValue, token: String): TextFieldValue {
     val selectionStart = value.selection.min
@@ -117,6 +119,19 @@ internal fun insertSqlToken(value: TextFieldValue, token: String): TextFieldValu
     return value.copy(
         text = updatedText,
         selection = TextRange(cursorPosition),
+        composition = null,
+    )
+}
+
+/** 선택 영역을 공백 보정 없이 특수문자로 바꿉니다. */
+internal fun insertSqlSymbol(value: TextFieldValue, symbol: String): TextFieldValue {
+    val selectionStart = value.selection.min
+    val selectionEnd = value.selection.max
+    val updatedText = value.text.replaceRange(selectionStart, selectionEnd, symbol)
+
+    return value.copy(
+        text = updatedText,
+        selection = TextRange(selectionStart + symbol.length),
         composition = null,
     )
 }
@@ -404,8 +419,8 @@ fun LevelDetailScreen(
                     .fillMaxWidth()
                     .focusRequester(sqlInputFocusRequester),
                 label = { Text(stringResource(R.string.sql_input_label)) },
-                minLines = 8,
-                maxLines = 12,
+                minLines = 6,
+                maxLines = 10,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     fontFamily = FontFamily.Monospace,
                 ),
@@ -439,6 +454,10 @@ fun LevelDetailScreen(
                         onInputChange(insertSqlToken(sqlInput, token))
                         sqlInputFocusRequester.requestFocus()
                     },
+                    onSymbolClick = { symbol ->
+                        onInputChange(insertSqlSymbol(sqlInput, symbol))
+                        sqlInputFocusRequester.requestFocus()
+                    },
                 )
             }
         }
@@ -450,6 +469,7 @@ internal fun SqlInputAccessoryBar(
     showTableTokens: Boolean,
     onCategorySelected: (Boolean) -> Unit,
     onTokenClick: (String) -> Unit,
+    onSymbolClick: (String) -> Unit = onTokenClick,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -472,6 +492,17 @@ internal fun SqlInputAccessoryBar(
                     onClick = { onCategorySelected(true) },
                     label = { Text(stringResource(R.string.sql_tables)) },
                 )
+                sqlSymbolTokens.forEach { symbol ->
+                    AssistChip(
+                        onClick = { onSymbolClick(symbol) },
+                        label = {
+                            Text(
+                                text = symbol,
+                                fontFamily = FontFamily.Monospace,
+                            )
+                        },
+                    )
+                }
             }
             SqlTokenChips(
                 tokens = if (showTableTokens) sqlTableTokens else sqlKeywordTokens,
